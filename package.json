@@ -1,0 +1,9 @@
+{
+  "name": "bili_login",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.0.0-beta.10"
+  }
+}
