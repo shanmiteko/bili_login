@@ -3,6 +3,7 @@
 
 **openSUSE**
 ```
+$ sudo zypper install -t pattern devel_C_C++
 $ sudo zypper dup && sudo zypper in webkit2gtk3-devel \
     openssl-devel \
     curl \
@@ -11,5 +12,9 @@ $ sudo zypper dup && sudo zypper in webkit2gtk3-devel \
     patchelf \
     librsvg2-devel
 ```
+
+>fatal error: vips/vips8: No such file or directory
+>
+>`$ sudo zypper in libvips-devel`
 
 

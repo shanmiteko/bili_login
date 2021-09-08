@@ -1,21 +1,95 @@
 <!DOCTYPE html>
-<html>
-  <style>
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-    }
+<html lang="zh_CN">
 
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-  </style>
-  <body>
-    <h1>bili_login</h1>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="css/style.css" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+    <div>
+        <input class="inp" id="username" type="text" placeholder="账号">
+        <br>
+        <br>
+        <input class="inp" id="password" type="text" placeholder="密码">
+    </div>
+
+    <br>
+    <div id="btn-gen" class="btn">生成验证码</div>
+    <br>
+    <br>
+
+    <div>
+        <div id="captcha">
+            <div id="text">
+                请点击生成按钮
+            </div>
+            <div id="wait" class="show">
+                <div class="loading">
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <br>
+    <div id="btn-result" class="btn">获取Cookies</div>
+
+    <script src="js/jquery.js"></script>
+    <script src="js/gt.js"></script>
+
+    <script>
+        const handler = function (captchaObj) {
+            captchaObj.appendTo('#captcha')
+            captchaObj.onReady(function () {
+                $("#wait").hide();
+            })
+            $('#btn-result').click(function () {
+                const result = captchaObj.getValidate()
+                if (!result) {
+                    return alert('请完成验证');
+                }
+                __TAURI_INVOKE__(
+                    "send_geetest_result",
+                    { GeetestResult: { validate: result.geetest_validate, seccode: result.geetest_seccode } }
+                ).then(alert)
+                $('#btn-result')
+            })
+        };
+        $('#btn-gen').click(function () {
+            const { value: uname } = $("#username")[0]
+            const { value: pwd } = $("#password")[0]
+            if (uname && pwd) {
+                __TAURI_INVOKE__(
+                    "send_login_info",
+                    { Account: { uname, pwd } }
+                ).then(
+                    ({ gt, challenge }) => {
+                        $('#text').hide();
+                        $('#btn-gen').hide();
+                        $('#wait').show();
+                        if (gt && challenge) {
+                            initGeetest({
+                                gt,
+                                challenge,
+                                offline: false,
+                                new_captcha: true,
+                                product: "popup",
+                                width: "300px",
+                                https: true
+                            }, handler);
+                        }
+                    },
+                    alert
+                )
+            }
+        })
+    </script>
+</body>
+
 </html>

@@ -1,24 +1,22 @@
 [package]
-name = "app"
+name = "bili_login"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "bili_login"
+authors = ["shanmite"]
 license = ""
 repository = ""
-default-run = "app"
+default-run = "bili_login"
 edition = "2018"
 build = "src/build.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
 tauri-build = { version = "1.0.0-beta.4" }
 
 [dependencies]
-serde_json = "1.0"
+rand = "0.8.4"
+base64 = "0.13.0"
+rsa = "0.5.0"
+lazy_static = "1.4.0"
+tokio = { version = "1.11.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.0.0-beta.8", features = ["api-all"] }
-
-[features]
-default = [ "custom-protocol" ]
-custom-protocol = [ "tauri/custom-protocol" ]

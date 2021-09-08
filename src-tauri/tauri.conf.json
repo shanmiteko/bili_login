@@ -54,7 +54,7 @@
     "windows": [
       {
         "title": "Login bilibili.com",
-        "width": 800,
+        "width": 500,
         "height": 600,
         "resizable": true,
         "fullscreen": false
