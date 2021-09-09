@@ -4,14 +4,16 @@ use crate::http::{get, post};
 
 pub enum Error {
     TauriError(String),
-    KeyNotFind(String),
+    KeyNotFound(String),
+    LoginError(String),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::TauriError(msg) => write!(f, "{}", msg),
-            Error::KeyNotFind(msg) => write!(f, "key {} not found", msg),
+            Error::KeyNotFound(msg) => write!(f, "key {} not found", msg),
+            Error::LoginError(msg) => write!(f, "登录失败: {}", msg),
         }
     }
 }
@@ -40,26 +42,26 @@ impl CaptchaCombine {
 
         let captcha_combine_result = captcha_combine_data
             .get("data")
-            .ok_or(Error::KeyNotFind("data".into()))?
+            .ok_or(Error::KeyNotFound("data".into()))?
             .get("result")
-            .ok_or(Error::KeyNotFind("result".into()))?;
+            .ok_or(Error::KeyNotFound("result".into()))?;
 
         Ok(Self {
             gt: captcha_combine_result
                 .get("gt")
-                .ok_or(Error::KeyNotFind("gt".into()))?
+                .ok_or(Error::KeyNotFound("gt".into()))?
                 .as_str()
                 .unwrap()
                 .into(),
             challenge: captcha_combine_result
                 .get("challenge")
-                .ok_or(Error::KeyNotFind("challenge".into()))?
+                .ok_or(Error::KeyNotFound("challenge".into()))?
                 .as_str()
                 .unwrap()
                 .into(),
             key: captcha_combine_result
                 .get("key")
-                .ok_or(Error::KeyNotFind("key".into()))?
+                .ok_or(Error::KeyNotFound("key".into()))?
                 .as_str()
                 .unwrap()
                 .into(),
@@ -91,13 +93,13 @@ impl LoginKeys {
         Ok(Self {
             hash: login_keys_data
                 .get("hash")
-                .ok_or(Error::KeyNotFind("hash".into()))?
+                .ok_or(Error::KeyNotFound("hash".into()))?
                 .as_str()
                 .unwrap()
                 .into(),
             key: login_keys_data
                 .get("key")
-                .ok_or(Error::KeyNotFind("key".into()))?
+                .ok_or(Error::KeyNotFound("key".into()))?
                 .as_str()
                 .unwrap()
                 .into(),
@@ -170,7 +172,7 @@ impl LoginInfo {
     }
 
     pub async fn fetch(&self) -> Result<String, Error> {
-        let data = post(
+        let login_value = post(
             "https://passport.bilibili.com/web/login/v2",
             None,
             Some(self.as_vec()),
@@ -181,7 +183,43 @@ impl LoginInfo {
         .or_else(|error| Err(Error::TauriError(error.to_string())))?
         .data;
 
-        Ok(data.to_string())
+        match login_value
+            .get("code")
+            .ok_or(Error::KeyNotFound("code".into()))?
+            .as_i64()
+            .unwrap()
+        {
+            0 => {}
+            -2110 => {
+                return Err(Error::LoginError(
+                    login_value
+                        .get("data")
+                        .ok_or(Error::KeyNotFound("data".into()))?
+                        .as_str()
+                        .unwrap()
+                        .into(),
+                ));
+            }
+            _ => {
+                return Err(Error::LoginError(
+                    login_value
+                        .get("message")
+                        .ok_or(Error::KeyNotFound("message".into()))?
+                        .as_str()
+                        .unwrap()
+                        .into(),
+                ));
+            }
+        };
+
+        Ok(login_value
+            .get("data")
+            .ok_or(Error::KeyNotFound("data".into()))?
+            .get("redirectUrl")
+            .ok_or(Error::KeyNotFound("redirectUrl".into()))?
+            .as_str()
+            .unwrap()
+            .into())
     }
 }
 

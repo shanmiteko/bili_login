@@ -13,7 +13,7 @@
         <input class="inp" id="username" type="text" placeholder="账号">
         <br>
         <br>
-        <input class="inp" id="password" type="text" placeholder="密码">
+        <input class="inp" id="password" type="password" placeholder="密码">
     </div>
 
     <br>
@@ -39,11 +39,13 @@
 
     <br>
     <div id="btn-result" class="btn">获取Cookies</div>
+    <div id="btn-update" class="btn">重新登录</div>
 
     <script src="js/jquery.js"></script>
     <script src="js/gt.js"></script>
 
     <script>
+        $('#btn-update').hide()
         const handler = function (captchaObj) {
             captchaObj.appendTo('#captcha')
             captchaObj.onReady(function () {
@@ -58,7 +60,15 @@
                     "send_geetest_result",
                     { GeetestResult: { validate: result.geetest_validate, seccode: result.geetest_seccode } }
                 ).then(alert)
-                $('#btn-result')
+                $('#btn-result').hide()
+                $('#btn-update').click(function () {
+                    __TAURI_INVOKE__(
+                        "update_login_info",
+                    ).then(() => {
+                        window.location.reload()
+                    })
+                })
+                $('#btn-update').show()
             })
         };
         $('#btn-gen').click(function () {

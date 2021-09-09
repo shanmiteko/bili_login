@@ -62,36 +62,45 @@ async fn send_login_info(Account { uname, pwd }: Account) -> GeetestRequest {
 }
 
 #[command]
-async fn send_geetest_result(GeetestResult { validate, seccode }: GeetestResult) {
+async fn send_geetest_result(GeetestResult { validate, seccode }: GeetestResult) -> String {
     LOGIN_INFO.lock().await.validate(validate);
     LOGIN_INFO.lock().await.seccode(seccode);
 
     match LOGIN_INFO.lock().await.fetch().await {
-        Ok(m) => {
-            println!("{}", &m)
-        }
-        Err(e) => println!("{}", e),
+        Ok(m) => m,
+        Err(e) => e.to_string(),
     }
 }
 
-#[tokio::main]
-async fn main() {
+#[command]
+async fn update_login_info() {
+    *LOGIN_INFO.lock().await = LoginInfo::new();
+    set_global().await;
+}
+
+async fn set_global() {
     match CaptchaCombine::fetch().await {
         Ok(CaptchaCombine { gt, challenge, key }) => {
             LOGIN_INFO.lock().await.challenge(challenge);
             LOGIN_INFO.lock().await.key(key);
 
-            GT.lock().await.insert_str(0, &gt);
+            *GT.lock().await = gt;
         }
         Err(error) => {
             panic!("{}", error)
         }
     }
+}
+
+#[tokio::main]
+async fn main() {
+    set_global().await;
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             send_login_info,
-            send_geetest_result
+            send_geetest_result,
+            update_login_info
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
