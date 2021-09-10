@@ -40,12 +40,32 @@
     <br>
     <div id="btn-result" class="btn">获取Cookies</div>
     <div id="btn-update" class="btn">重新登录</div>
+    <br>
+    <br>
+    <div id="msg"></div>
+    <style>
+        #msg {
+            display: inline-block;
+            width: 300px;
+            text-align: center;
+            border-radius: 2px;
+            background-color: #F3F3F3;
+            color: #BBBBBB;
+            font-size: 15px;
+            padding: 10px 10px;
+            user-select: text;
+            word-wrap: break-word;
+            word-break: normal;
+        }
+    </style>
 
     <script src="js/jquery.js"></script>
     <script src="js/gt.js"></script>
 
     <script>
+        $('#btn-result').hide()
         $('#btn-update').hide()
+        $('#msg').hide()
         const handler = function (captchaObj) {
             captchaObj.appendTo('#captcha')
             captchaObj.onReady(function () {
@@ -54,22 +74,32 @@
             $('#btn-result').click(function () {
                 const result = captchaObj.getValidate()
                 if (!result) {
-                    return alert('请完成验证');
+                    return alert('请先完成验证');
                 }
                 __TAURI_INVOKE__(
                     "send_geetest_result",
                     { GeetestResult: { validate: result.geetest_validate, seccode: result.geetest_seccode } }
-                ).then(alert)
-                $('#btn-result').hide()
-                $('#btn-update').click(function () {
-                    __TAURI_INVOKE__(
-                        "update_login_info",
-                    ).then(() => {
-                        window.location.reload()
-                    })
+                ).then(msg => {
+                    try {
+                        msg = decodeURI(msg)
+                            .split('?')[1]
+                            .split('&')
+                            .map(it => it.split('='))
+                            .filter(it => ['DedeUserID', 'bili_jct', 'SESSDATA'].indexOf(it[0]) > -1)
+                            .map(it => it.join('='))
+                            .join('; ')
+                    } catch (_) { }
+                    $('#msg').text(msg).show()
+                    $('#btn-result').hide()
+                    $('#btn-update').click(function () {
+                        __TAURI_INVOKE__(
+                            "update_login_info",
+                        ).then(() => {
+                            window.location.reload()
+                        })
+                    }).show()
                 })
-                $('#btn-update').show()
-            })
+            }).show()
         };
         $('#btn-gen').click(function () {
             const { value: uname } = $("#username")[0]
