@@ -1,3 +1,5 @@
+[![publish-release](https://github.com/shanmiteko/bili_login/actions/workflows/build.yml/badge.svg)](https://github.com/shanmiteko/bili_login/actions/workflows/build.yml)
+
 ### 开发依赖
 [tauri-setup-linux](https://tauri.studio/en/docs/getting-started/setup-linux/)
 
