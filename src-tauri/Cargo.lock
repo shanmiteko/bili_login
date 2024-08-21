@@ -3,6 +3,21 @@
 version = 3
 
 [[package]]
+name = "BiliLogin"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "lazy_static",
+ "rand 0.8.5",
+ "rsa",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tokio",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -130,21 +145,6 @@ name = "base64ct"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
-
-[[package]]
-name = "bili_login"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "lazy_static",
- "rand 0.8.5",
- "rsa",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tokio",
-]
 
 [[package]]
 name = "bitflags"
