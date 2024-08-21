@@ -3,24 +3,16 @@ mod send;
 use send::HttpRequest;
 
 /// GET
-pub async fn get<K, V>(url: &str, query: Option<Vec<(K, V)>>) -> HttpRequest
-where
-    K: Into<String>,
-    V: Into<String>,
-{
+pub async fn get(url: &str, query: Option<Vec<(String, String)>>) -> HttpRequest {
     HttpRequest::make("GET", url, query, None).await
 }
 
 /// POST
-pub async fn post<K, V>(
+pub async fn post(
     url: &str,
-    query: Option<Vec<(K, V)>>,
-    body: Option<Vec<(K, V)>>,
-) -> HttpRequest
-where
-    K: Into<String>,
-    V: Into<String>,
-{
+    query: Option<Vec<(String, String)>>,
+    body: Option<Vec<(String, String)>>,
+) -> HttpRequest {
     HttpRequest::make("POST", url, query, body).await
 }
 
@@ -30,10 +22,13 @@ mod tests {
 
     #[tokio::test]
     async fn get_test() {
-        match get("https://httpbin.org/get", Some(vec![("foo", "bar")]))
-            .await
-            .json()
-            .await
+        match get(
+            "https://httpbin.org/get",
+            Some(vec![("foo".to_string(), "bar".to_string())]),
+        )
+        .await
+        .json()
+        .await
         {
             Ok(resp) => {
                 let resp_data = resp.data;
@@ -56,8 +51,8 @@ mod tests {
     async fn post_test() {
         match post(
             "https://httpbin.org/post",
-            Some(vec![("foo".to_string(), "bar")]),
-            Some(vec![("foo".to_string(), "bar")]),
+            Some(vec![("foo".to_string(), "bar".to_string())]),
+            Some(vec![("foo".to_string(), "bar".to_string())]),
         )
         .await
         .json()

@@ -1,22 +1,7 @@
-[![publish-release](https://github.com/shanmiteko/bili_login/actions/workflows/build.yml/badge.svg)](https://github.com/shanmiteko/bili_login/actions/workflows/build.yml)
+# Tauri + Vanilla
 
-### 开发依赖
-[tauri-setup-linux](https://tauri.studio/en/docs/getting-started/setup-linux/)
+This template should help get you started developing with Tauri in vanilla HTML, CSS and Javascript.
 
-**openSUSE**
-```
-$ sudo zypper install -t pattern devel_C_C++
-$ sudo zypper dup && sudo zypper in webkit2gtk3-devel \
-    openssl-devel \
-    curl \
-    wget \
-    libappindicator3-devel \
-    patchelf \
-    librsvg2-devel
-```
+## Recommended IDE Setup
 
->fatal error: vips/vips8: No such file or directory
->
->`$ sudo zypper in libvips-devel`
-
-
+- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)

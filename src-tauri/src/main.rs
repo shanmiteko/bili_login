@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use tauri::command;
 use tokio::sync::Mutex;
 
-use client::{CaptchaCombine, LoginInfo, LoginKeys};
+use client::{Captcha, LoginInfo, LoginKeys};
 use codec::rsa_encode;
 
 lazy_static! {
@@ -79,10 +79,14 @@ async fn update_login_info() {
 }
 
 async fn set_global() {
-    match CaptchaCombine::fetch().await {
-        Ok(CaptchaCombine { gt, challenge, key }) => {
+    match Captcha::fetch().await {
+        Ok(Captcha {
+            gt,
+            challenge,
+            token,
+        }) => {
             LOGIN_INFO.lock().await.challenge(challenge);
-            LOGIN_INFO.lock().await.key(key);
+            LOGIN_INFO.lock().await.token(token);
 
             *GT.lock().await = gt;
         }

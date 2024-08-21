@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="css/style.css" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+    <div>
+        <input class="inp" id="username" type="text" placeholder="账号">
+        <br>
+        <br>
+        <input class="inp" id="password" type="password" placeholder="密码">
+    </div>
+
+    <br>
+    <div id="btn-gen" class="btn">生成验证码</div>
+    <br>
+    <br>
+
+    <div>
+        <div id="captcha">
+            <div id="text">
+                请点击生成按钮
+            </div>
+            <div id="wait" class="show">
+                <div class="loading">
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <br>
+    <div id="btn-result" class="btn">获取Cookies</div>
+    <div id="btn-update" class="btn">重新登录</div>
+    <br>
+    <br>
+    <div id="msg"></div>
+    <style>
+        #msg {
+            display: inline-block;
+            width: 300px;
+            text-align: center;
+            border-radius: 2px;
+            background-color: #F3F3F3;
+            color: #BBBBBB;
+            font-size: 15px;
+            padding: 10px 10px;
+            user-select: text;
+            word-wrap: break-word;
+            word-break: normal;
+        }
+    </style>
+
+    <script src="js/jquery.js"></script>
+    <script src="js/gt.js"></script>
+
+    <script>
+        const { invoke } = window.__TAURI__.tauri
+        $('#btn-result').hide()
+        $('#btn-update').hide()
+        $('#msg').hide()
+        const handler = function (captchaObj) {
+            captchaObj.appendTo('#captcha')
+            captchaObj.onReady(function () {
+                $("#wait").hide();
+            })
+            $('#btn-result').click(function () {
+                const result = captchaObj.getValidate()
+                if (!result) {
+                    return alert('请先完成验证');
+                }
+                invoke(
+                    "send_geetest_result",
+                    { geetestResult: { validate: result.geetest_validate, seccode: result.geetest_seccode } }
+                ).then(msg => {
+                    // try {
+                    //     msg = decodeURI(msg)
+                    //         .split('?')[1]
+                    //         .split('&')
+                    //         .map(it => it.split('='))
+                    //         .filter(it => ['DedeUserID', 'bili_jct', 'SESSDATA'].indexOf(it[0]) > -1)
+                    //         .map(it => it.join('='))
+                    //         .join('; ')
+                    // } catch (_) { }
+                    $('#msg').text(msg).show()
+                    $('#btn-result').hide()
+                    $('#btn-update').click(function () {
+                        invoke(
+                            "update_login_info",
+                        ).then(() => {
+                            window.location.reload()
+                        })
+                    }).show()
+                })
+            }).show()
+        };
+        $('#btn-gen').click(function () {
+            const { value: uname } = $("#username")[0]
+            const { value: pwd } = $("#password")[0]
+            if (uname && pwd) {
+                invoke(
+                    "send_login_info",
+                    { account: { uname, pwd } }
+                ).then(
+                    ({ gt, challenge }) => {
+                        $('#text').hide();
+                        $('#btn-gen').hide();
+                        $('#wait').show();
+                        if (gt && challenge) {
+                            initGeetest({
+                                gt,
+                                challenge,
+                                offline: false,
+                                new_captcha: true,
+                                product: "popup",
+                                width: "300px",
+                                https: true
+                            }, handler);
+                        }
+                    },
+                    alert
+                )
+            }
+        })
+    </script>
+</body>
+
+</html>

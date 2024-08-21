@@ -1,20 +1,18 @@
-use base64::encode;
-use rand::rngs::OsRng;
-use rsa::{pkcs8::FromPublicKey, PaddingScheme, PublicKey, RsaPublicKey};
+use base64::prelude::*;
+use rsa::{pkcs8::DecodePublicKey, Pkcs1v15Encrypt, RsaPublicKey};
 
 pub fn rsa_encode(pem: &str, secret: &str) -> String {
-    let mut rng = OsRng;
+    let mut rng = rand::thread_rng();
     let public_key = RsaPublicKey::from_public_key_pem(pem).unwrap();
-    let padding = PaddingScheme::new_pkcs1v15_encrypt();
     let enc_data = public_key
-        .encrypt(&mut rng, padding, secret.as_bytes())
+        .encrypt(&mut rng, Pkcs1v15Encrypt, secret.as_bytes())
         .expect("failed to encrypt");
 
     base_encode(enc_data)
 }
 
 fn base_encode<T: AsRef<[u8]>>(input: T) -> String {
-    encode(input)
+    BASE64_STANDARD.encode(input)
 }
 
 mod tests {

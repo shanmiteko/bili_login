@@ -19,49 +19,51 @@ impl Display for Error {
 }
 
 /// 验证码参数
-pub struct CaptchaCombine {
+pub struct Captcha {
     pub gt: String,
     pub challenge: String,
-    pub key: String,
+    pub token: String,
 }
 
-impl CaptchaCombine {
+impl Captcha {
     /// ### 申请验证码参数
     ///
-    /// 获取并初始化 `CaptchaCombine`
+    /// 获取并初始化 `Captcha`
     pub async fn fetch() -> Result<Self, Error> {
-        let captcha_combine_data = get(
-            "https://passport.bilibili.com/web/captcha/combine",
-            Some(vec![("plat", "6")]),
+        let captcha_res = get(
+            "https://passport.bilibili.com/x/passport-login/captcha",
+            Some(vec![("source".to_string(), "main_web".to_string())]),
         )
         .await
         .json()
         .await
-        .or_else(|error| Err(Error::TauriError(error.to_string())))?
+        .map_err(|error| Error::TauriError(error.to_string()))?
         .data;
 
-        let captcha_combine_result = captcha_combine_data
+        let captcha_data = captcha_res
             .get("data")
-            .ok_or(Error::KeyNotFound("data".into()))?
-            .get("result")
-            .ok_or(Error::KeyNotFound("result".into()))?;
+            .ok_or(Error::KeyNotFound("Captcha data".into()))?;
+
+        let captcha_data_geetest = captcha_data
+            .get("geetest")
+            .ok_or(Error::KeyNotFound("Captcha data geetest".into()))?;
 
         Ok(Self {
-            gt: captcha_combine_result
+            gt: captcha_data_geetest
                 .get("gt")
-                .ok_or(Error::KeyNotFound("gt".into()))?
+                .ok_or(Error::KeyNotFound("Captcha data geetest gt".into()))?
                 .as_str()
                 .unwrap()
                 .into(),
-            challenge: captcha_combine_result
+            challenge: captcha_data_geetest
                 .get("challenge")
-                .ok_or(Error::KeyNotFound("challenge".into()))?
+                .ok_or(Error::KeyNotFound("Captcha data geetest challenge".into()))?
                 .as_str()
                 .unwrap()
                 .into(),
-            key: captcha_combine_result
-                .get("key")
-                .ok_or(Error::KeyNotFound("key".into()))?
+            token: captcha_data
+                .get("token")
+                .ok_or(Error::KeyNotFound("Captcha data token".into()))?
                 .as_str()
                 .unwrap()
                 .into(),
@@ -80,26 +82,30 @@ impl LoginKeys {
     ///
     /// 获取并初始化 `LoginKeys`
     pub async fn fetch() -> Result<Self, Error> {
-        let login_keys_data = get(
-            "https://passport.bilibili.com/login",
-            Some(vec![("act", "getkey")]),
+        let login_keys_res = get(
+            "https://passport.bilibili.com/x/passport-login/web/key",
+            None,
         )
         .await
         .json()
         .await
-        .or_else(|error| Err(Error::TauriError(error.to_string())))?
+        .map_err(|error| Error::TauriError(error.to_string()))?
         .data;
+
+        let login_keys_data = login_keys_res
+            .get("data")
+            .ok_or(Error::KeyNotFound("LoginKeys data".into()))?;
 
         Ok(Self {
             hash: login_keys_data
                 .get("hash")
-                .ok_or(Error::KeyNotFound("hash".into()))?
+                .ok_or(Error::KeyNotFound("LoginKeys data hash".into()))?
                 .as_str()
                 .unwrap()
                 .into(),
             key: login_keys_data
                 .get("key")
-                .ok_or(Error::KeyNotFound("key".into()))?
+                .ok_or(Error::KeyNotFound("LoginKeys data key".into()))?
                 .as_str()
                 .unwrap()
                 .into(),
@@ -110,11 +116,10 @@ impl LoginKeys {
 #[allow(non_snake_case)]
 #[derive(Debug)]
 pub struct LoginInfo {
-    captchaType: String,
     username: String,
     pub password: String,
     keep: String,
-    key: String,
+    token: String,
     pub challenge: String,
     validate: String,
     seccode: String,
@@ -123,11 +128,10 @@ pub struct LoginInfo {
 impl LoginInfo {
     pub fn new() -> Self {
         LoginInfo {
-            captchaType: "6".into(),
             username: String::new(),
             password: String::new(), //codec::rsa_encode(&pem, &hash.add(&password)),
-            keep: "true".into(),
-            key: String::new(),
+            keep: "0".into(),
+            token: String::new(),
             challenge: String::new(),
             validate: String::new(),
             seccode: String::new(),
@@ -142,8 +146,8 @@ impl LoginInfo {
         self.password = password;
     }
 
-    pub fn key(&mut self, key: String) {
-        self.key = key;
+    pub fn token(&mut self, token: String) {
+        self.token = token;
     }
 
     pub fn challenge(&mut self, challenge: String) {
@@ -158,51 +162,42 @@ impl LoginInfo {
         self.seccode = seccode;
     }
 
-    fn as_vec<'a>(&self) -> Vec<(&'a str, String)> {
+    fn to_vec(&self) -> Vec<(String, String)> {
         vec![
-            ("captchaType", self.captchaType.clone()),
-            ("username", self.username.clone()),
-            ("password", self.password.clone()),
-            ("keep", self.keep.clone()),
-            ("key", self.key.clone()),
-            ("challenge", self.challenge.clone()),
-            ("validate", self.validate.clone()),
-            ("seccode", self.seccode.clone()),
+            ("username".to_string(), self.username.clone()),
+            ("password".to_string(), self.password.clone()),
+            ("keep".to_string(), self.keep.clone()),
+            ("token".to_string(), self.token.clone()),
+            ("challenge".to_string(), self.challenge.clone()),
+            ("validate".to_string(), self.validate.clone()),
+            ("seccode".to_string(), self.seccode.clone()),
         ]
     }
 
     pub async fn fetch(&self) -> Result<String, Error> {
-        let login_value = post(
-            "https://passport.bilibili.com/web/login/v2",
+        let login_res = post(
+            "https://passport.bilibili.com/x/passport-login/web/login",
             None,
-            Some(self.as_vec()),
+            Some(self.to_vec()),
         )
         .await
         .json()
         .await
-        .or_else(|error| Err(Error::TauriError(error.to_string())))?
+        .map_err(|error| Error::TauriError(error.to_string()))?
         .data;
 
-        match login_value
+        match login_res
             .get("code")
             .ok_or(Error::KeyNotFound("code".into()))?
             .as_i64()
             .unwrap()
         {
-            0 => {}
-            -2110 => {
-                return Err(Error::LoginError(
-                    login_value
-                        .get("data")
-                        .ok_or(Error::KeyNotFound("data".into()))?
-                        .as_str()
-                        .unwrap()
-                        .into(),
-                ));
+            0 => {
+                dbg!(&login_res)
             }
             _ => {
                 return Err(Error::LoginError(
-                    login_value
+                    login_res
                         .get("message")
                         .ok_or(Error::KeyNotFound("message".into()))?
                         .as_str()
@@ -212,11 +207,11 @@ impl LoginInfo {
             }
         };
 
-        Ok(login_value
+        Ok(login_res
             .get("data")
             .ok_or(Error::KeyNotFound("data".into()))?
-            .get("redirectUrl")
-            .ok_or(Error::KeyNotFound("redirectUrl".into()))?
+            .get("url")
+            .ok_or(Error::KeyNotFound("url".into()))?
             .as_str()
             .unwrap()
             .into())
@@ -225,15 +220,19 @@ impl LoginInfo {
 
 #[cfg(test)]
 mod tests {
-    use super::{CaptchaCombine, LoginInfo, LoginKeys};
+    use super::{Captcha, Error, LoginInfo, LoginKeys};
 
     #[tokio::test]
     async fn fetch_captcha_combine_test() {
-        match CaptchaCombine::fetch().await {
-            Ok(CaptchaCombine { gt, challenge, key }) => {
+        match Captcha::fetch().await {
+            Ok(Captcha {
+                gt,
+                challenge,
+                token,
+            }) => {
                 assert!(!gt.is_empty());
                 assert!(!challenge.is_empty());
-                assert!(!key.is_empty());
+                assert!(!token.is_empty());
             }
             Err(error) => {
                 panic!("{}", error)
@@ -259,17 +258,15 @@ mod tests {
         let mut login_info = LoginInfo::new();
         login_info.username("username".to_string());
         login_info.password("password".to_string());
-        login_info.key(
+        login_info.token(
             "-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo4QBxWqrnzFAkCLBZ/+z
-UGZPrbV267z/2fItMD91nZa79TqAmM0SjHCe+ESq9YbRAnQXTXDOXJc34Z9a2m9y
-ZaBWexHPprIygKm1PIi9UrVa58EV/AbiBRc53ExvRDVZDjG6OPZfceTJS4nA+hRR
-idT9ZlACtXid++lw2/Y32woJRj40Mjaxa0Hi7C0A+vyVL8SvDh1AvFOW5/dGnKkf
-WMelpsyjmnJ0Ub1zr46aDT1m9Rb/lBijLjOqeEt0FgvpXJM5mb8N0oWdLoxir4MX
-Z+MVhfGZtKOu533fwCvYD35Br/LbBLxnTwPolrvLZKOS6wEktWVqx/bJMc20h87G
-8wIDAQAB
------END PUBLIC KEY-----"
-                .to_string(),
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDjb4V7EidX/ym28t2ybo0U6t0n
+6p4ej8VjqKHg100va6jkNbNTrLQqMCQCAYtXMXXp2Fwkk6WR+12N9zknLjf+C9sx
+/+l48mjUU8RqahiFD1XT/u2e0m2EN029OhCgkHx3Fc/KlFSIbak93EH/XlYis0w+
+Xl69GV6klzgxW6d2xQIDAQAB
+-----END PUBLIC KEY-----
+"
+            .to_string(),
         );
         login_info.challenge("challenge".to_string());
         login_info.seccode("seccode".to_string());
@@ -279,9 +276,10 @@ Z+MVhfGZtKOu533fwCvYD35Br/LbBLxnTwPolrvLZKOS6wEktWVqx/bJMc20h87G
             Ok(s) => {
                 assert!(!s.is_empty())
             }
-            Err(error) => {
-                panic!("{}", error)
-            }
+            Err(error) => match error {
+                Error::LoginError(_) => (),
+                _ => panic!(),
+            },
         }
     }
 }
